@@ -1,0 +1,15 @@
+SELECT 
+    TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', t."timestamp"::TIMESTAMP_NTZ), 'YYYY-MM-DD') AS TIMESTAMP,
+    '***' || RIGHT(a.CARD_NUMBER,4) AS CARDNUMBER,
+    a.FIRST_NAME,
+    a.LAST_NAME,
+    t.TYPE || '-' || t.SOURCE AS ACTIVITY,
+    t.POINTS,
+    PARSE_JSON(metadata):branch_code::string as LOCATION
+FROM "BPAY_SFCRWDS_transactions" t
+INNER JOIN "BPAY_SFCRWDS_accounts" a ON a.ID = t.ACCOUNT_ID
+WHERE 
+    t.TYPE IN ('REDEEM','EARN') 
+    AND ACCOUNT_ID != '084c35ba-4e90-4cf9-96e6-ffb399c4646b'--  "INTERNAL-TRANSFER"
+    AND TIMESTAMP = :timestamp
+ORDER BY TIMESTAMP DESC;
