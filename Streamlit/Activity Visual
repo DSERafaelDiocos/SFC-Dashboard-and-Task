@@ -1,0 +1,189 @@
+# Import python packages
+import streamlit as st
+import pandas as pd
+import numpy as np
+from snowflake.snowpark.context import get_active_session
+
+
+# Write directly to the app
+st.title("Activity Analysis Dashboard")
+st.write(
+    """Analysis for SFC RWDS Activity
+    """
+)
+
+# Get the current credentials
+session = get_active_session()
+
+# Create an example dataframe
+created_dataframe = session.sql(
+    """SELECT 
+    DISTINCT TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', t."timestamp"::TIMESTAMP_NTZ),'YYYY/MM/DD') AS DATE_ONLY,
+    t.TYPE || '-' || t.SOURCE AS ACTIVITY,
+    
+    -- EARN and REDEEM
+    CASE 
+        WHEN t.TYPE IN ('EARN', 'REDEEM') THEN t.TYPE || '-' || t.SOURCE -- Positive values (including zero)
+        ELSE NULL
+    END AS EARN_REDEEM,
+    CASE 
+        WHEN t.TYPE = 'EARN' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS EARN_VALUE,
+    CASE 
+        WHEN t.TYPE = 'REDEEM' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS REDEEM_VALUE,
+
+    --DEBIT
+    CASE 
+        WHEN t.TYPE IN ('DEBIT', 'CONVERT_DEBIT') THEN t.TYPE || '-' || t.SOURCE -- Positive values (including zero)
+        ELSE NULL
+    END AS DEBITS,
+    CASE 
+        WHEN t.TYPE = 'DEBIT' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS DEBIT_VALUE,
+    CASE 
+        WHEN t.TYPE = 'CONVERT_DEBIT' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS CON_DEBIT_VALUE,
+
+    --CREDIT
+    CASE 
+        WHEN t.TYPE IN ('CREDIT', 'CONVERT_CREDIT') THEN t.TYPE || '-' || t.SOURCE -- Positive values (including zero)
+        ELSE NULL
+    END AS CREDITS,
+    CASE 
+        WHEN t.TYPE = 'CREDIT' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS CREDIT_VALUE,
+    CASE 
+        WHEN t.TYPE = 'CONVERT_CREDIT' THEN  POINTS -- Positive values (including zero)
+        ELSE NULL
+    END AS CON_CREDIT_VALUE,
+    t.POINTS
+FROM "BPAY_SFCRWDS_transactions" t
+INNER JOIN "BPAY_SFCRWDS_accounts" a ON a.ID = t.ACCOUNT_ID;"""
+)
+
+# Execute the query and convert it into a Pandas dataframe
+my_df = created_dataframe.to_pandas()
+
+# Ensure that DATE_ONLY is a proper datetime object
+my_df['DATE_ONLY'] = pd.to_datetime(my_df['DATE_ONLY'], format='%Y/%m/%d')
+
+# Function to format numbers with commas
+def format_with_commas(number):
+    return f"{number:,.2f}"
+
+# Function to aggregate data based on the frequency (daily, weekly, etc.)
+def aggregate_data(my_df, freq):
+    # Ensure DATE_ONLY is in datetime format
+    my_df['DATE_ONLY'] = pd.to_datetime(my_df['DATE_ONLY'])
+
+    # Set LOCATION and DATE_ONLY as a multi-index
+    my_df.set_index(['DATE_ONLY', 'ACTIVITY', 'EARN_REDEEM', 'DEBITS'], inplace=True)
+    
+    # Group by 'DATE_ONLY' frequency, LOCATION, and ACTIVITY, then sum POINTS
+    aggregated_data = my_df.groupby([pd.Grouper(level='DATE_ONLY', freq=freq), 'ACTIVITY', 'EARN_REDEEM', 'DEBITS']).agg({
+        'POINTS': 'sum',
+        'EARN_VALUE': 'sum',
+        'REDEEM_VALUE': 'sum',
+        'DEBIT_VALUE': 'sum',
+        'CON_DEBIT_VALUE':'sum'
+        
+    }).reset_index()
+
+    return aggregated_data
+
+# Function to create charts (Bar, Area, Line)
+def create_line_chart(my_df_display, y, color, x):
+    # Ensure LOCATION and DATE_ONLY are columns after the aggregation (if multi-index)
+    my_df_display_reset = my_df_display.reset_index()  # Reset the multi-index
+    
+    # Plotting a line chart (only Line chart option now)
+    st.line_chart(my_df_display_reset.set_index(x)[y], color= color)
+
+def calculate_growth(my_df, column):
+    """Safely calculate growth, handling NaN values."""
+    if len(my_df) >= 2:
+        # Subtract the previous value from the current value, checking for NaN
+        growth = my_df[column].iloc[-1] - my_df[column].iloc[-2]
+        return int(growth) if not np.isnan(growth) else 0
+    return 0
+
+
+# Input widgets for date range and time frame selection
+col = st.columns(4)
+with col[0]:
+    start_date = st.date_input("Start date", my_df['DATE_ONLY'].min().date())
+with col[1]:
+    end_date = st.date_input("End date", my_df['DATE_ONLY'].max().date())
+with col[2]:
+    time_frame = st.selectbox("Select time frame", ("Daily", "Weekly", "Monthly", "Quarterly"))
+
+st.divider()
+
+# Filter data based on date range
+mask = (my_df['DATE_ONLY'].dt.date >= start_date) & (my_df['DATE_ONLY'].dt.date <= end_date)
+my_df_filtered = my_df.loc[mask]
+
+# Aggregate data based on selected time frame
+if time_frame == 'Daily' :
+    my_df_display = my_df_filtered
+elif time_frame == 'Weekly':
+    my_df_display = aggregate_data(my_df_filtered, 'W-MON')
+elif time_frame == 'Monthly':
+    my_df_display = aggregate_data(my_df_filtered, 'M')
+elif time_frame == 'Quarterly':
+    my_df_display = aggregate_data(my_df_filtered, 'Q')
+
+# Handle empty data cases
+if my_df_display.empty:
+    st.write("No data available for the selected filters.")
+else:
+    # Compute metric growth based on selected time frame
+    points_growth = calculate_growth(my_df_display, 'POINTS')
+    earn_points_growth = calculate_growth(my_df_display, 'EARN_VALUE')
+    redeem_points_growth = calculate_growth(my_df_display, 'REDEEM_VALUE')
+    # For Debit
+    debit_points_growth = calculate_growth(my_df_display, 'DEBIT_VALUE')
+    con_debit_points_growth = calculate_growth(my_df_display, 'CON_DEBIT_VALUE')
+    # # For Credit
+    # credit_points_growth = calculate_growth(my_df_display, 'CREDIT')
+    # con_credit_points_growth = calculate_growth(my_df_display, 'CON_CREDIT')
+
+
+    
+
+    # Create metrics columns
+    cols = st.columns(2)  # Example: Wider columns for charts or metrics
+    with cols[0]:
+        st.metric("Avg Earn ",
+                  # format_with_commas(my_df_display['EARN'].sum()),
+                  format_with_commas(my_df_display['EARN_VALUE'].mean()),
+                  format_with_commas(earn_points_growth))
+        # create_line_chart(my_df_display, y="POSITIVE_VALUE", color="#FF9F36", height=200 , x_column='DATE_ONLY')  # Use 'DATE_ONLY' as x-axis
+
+    with cols[1]:
+        st.metric("Avg Redeem",
+                  format_with_commas(my_df_display['REDEEM_VALUE'].mean()),
+                  format_with_commas(redeem_points_growth))
+        # create_line_chart(my_df_display, y="NEGATIVE_VALUE", color="#FF9F36", height=200 , x_column='DATE_ONLY')
+    create_line_chart(my_df_display, x='EARN_REDEEM', y=["EARN_VALUE", "REDEEM_VALUE"], color=["#FFAA00", "#0000FF"])
+
+    subcols = st.columns(4)
+    with subcols[0]:
+        st.metric("Avg Debit ",
+                  # format_with_commas(my_df_display['EARN'].sum()),
+                  format_with_commas(my_df_display['DEBIT_VALUE'].mean()),
+                  format_with_commas(debit_points_growth))
+
+    with subcols[1]:
+        st.metric("Avg Debit ",
+                  # format_with_commas(my_df_display['EARN'].sum()),
+                  format_with_commas(my_df_display['CON_DEBIT_VALUE'].mean()),
+                  format_with_commas(con_debit_points_growth))
+
+    create_line_chart(my_df_display, x='DEBITS', y=["DEBIT_VALUE", "CON_DEBIT_VALUE"], color=["#FFAA00", "#0000FF"])
