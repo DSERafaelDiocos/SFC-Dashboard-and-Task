@@ -1,21 +1,26 @@
-select
-    TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', P.INITIATED_AT::TIMESTAMP_NTZ),'YYYY-MM-DD HH24:MI:SS') AS INITIATED_AT,
-    TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', P.PROCESSED_AT::TIMESTAMP_NTZ),'YYYY-MM-DD HH24:MI:SS') AS PROCESSED_AT,
-    TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', P.PARTIALLY_REFUNDED_AT::TIMESTAMP_NTZ),'YYYY-MM-DD HH24:MI:SS') AS PARTIALLY_REFUNDED_AT ,
-    TO_CHAR(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', P.FULLY_REFUNDED_AT::TIMESTAMP_NTZ),'YYYY-MM-DD HH24:MI:SS') AS FULLY_REFUNDED_AT,
-    C.NAME as PartnerName,
-    P.REFERENCE_ID,
-    P.AMOUNT,
-    P.STATUS,
-    P.REASON,
-    A.FIRST_NAME,
-    A.LAST_NAME,
-    A.EMAIL_ADDRESS,
-    A.MOBILE_NUMBER
-from "BPAY_SFCPLUS_payments" P
-    inner join "BPAY_SFCPLUS_clients" C on C.ID = P.CLIENT_ID
-    left outer join "BPAY_SFCPLUS_accounts" A on P.ACCOUNT_ID = A.ID
-WHERE C.NAME = :partnername and
-    CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', P.INITIATED_AT::TIMESTAMP_NTZ)::DATE= :initiatedate
+SELECT        
+    convert_timezone('America/Los_Angeles', p.initiated_at)  payment_timestamp_pacific
+    ,a.first_name
+    ,a.middle_name
+    ,a.last_name
+    ,a.email_address
+    ,a.mobile_number
+    --,a.card_number
+    ,c.name partner
+        
+    ,p.amount payment_amount
+    ,p.currency payment_currency
+    ,p.reference_id payment_reference_id
+    ,p.status payment_status
+    ,PARSE_JSON(p.particulars):items[0].item_name item_name
+    ,PARSE_JSON(p.particulars):items[0].value item_value
+FROM 
+    SFC_ISDA.SFC_BRONZE."BPAY_SFCPLUS_payments" p                        
+    INNER JOIN SFC_ISDA.SFC_BRONZE."BPAY_SFCPLUS_clients" c ON c.id = p.client_id                        
+    LEFT OUTER JOIN SFC_ISDA.SFC_BRONZE."BPAY_SFCPLUS_accounts" a ON p.account_id = a.id                        
+WHERE                            
+    p.status = 'APPROVED'    
+    AND payment_timestamp_pacific::date = :initiatedate
+               
 
-order by P.INITIATED_AT desc
+ORDER BY payment_timestamp_pacific;
