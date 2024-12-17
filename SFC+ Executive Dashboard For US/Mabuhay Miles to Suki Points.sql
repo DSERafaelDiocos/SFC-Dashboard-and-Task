@@ -3,11 +3,12 @@ select
 	,To_Char(SUM(points), 'FM999,999,999') AS To_Suki_Points,					
 	TO_CHAR(SUM(CAST(metadata:"points" AS INTEGER)), 'FM999,999,999')  AS  From_Mabuhay_Miles					
 						
-from "BPAY_SFCRWDS_transactions" t 
-    inner join "BPAY_SFCRWDS_accounts" a on t.account_id = a.id		
+from SFC_RWDS_TRANSACTIONS t 
+    inner join SFC_RWDS_ACCOUNTS  a on t.account_id = a.id		
 where
     t.type = 'CONVERT_CREDIT' -- redemption						
-    and t.code = 'APPROVAL'						
+    and t.code = 'APPROVAL'	
+    AND partner_id = 'a19c59e4-f55e-428e-9efd-e9bd98d231af'
     -- AND DATE(CONVERT_TIMEZONE('America/Los_Angeles', t."timestamp")) < DATE_TRUNC('WEEK', CURRENT_TIMESTAMP)
     AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', "timestamp") AS DATE) <= CAST(CONVERT_TIMEZONE('America/Los_Angeles', DATE_TRUNC('WEEK', CURRENT_TIMESTAMP)) AS DATE)
 						
@@ -18,11 +19,12 @@ select
     -- CAST(CONVERT_TIMEZONE('America/Los_Angeles', t."timestamp") AS DATE) AS Description,
     To_Char(SUM(points), 'FM999,999,999') AS To_Suki_Points,					
 	TO_CHAR(SUM(CAST(metadata:"points" AS INTEGER)), 'FM999,999,999')  AS  From_Mabuhay_Miles				
-FROM "BPAY_SFCRWDS_transactions" t
-    INNER JOIN "BPAY_SFCRWDS_accounts" a ON t.account_id = a.id
+FROM SFC_RWDS_TRANSACTIONS t
+    INNER JOIN SFC_RWDS_ACCOUNTS  a ON t.account_id = a.id
 WHERE	
     t.type = 'CONVERT_CREDIT' -- redemption	
     AND t.code = 'APPROVAL'
+    AND partner_id = 'a19c59e4-f55e-428e-9efd-e9bd98d231af'
     AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', "timestamp") AS DATE) > CAST(CONVERT_TIMEZONE('America/Los_Angeles', DATE_TRUNC('WEEK', CURRENT_TIMESTAMP)) AS DATE)
     -- AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', t."timestamp") AS DATE) > DATE_TRUNC('WEEK', CURRENT_TIMESTAMP)
     AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', "timestamp") AS DATE) != CAST(CONVERT_TIMEZONE('America/Los_Angeles', CURRENT_TIMESTAMP) AS DATE)
@@ -37,10 +39,11 @@ SELECT
    'Total' AS Description,
     To_Char(SUM(points), 'FM999,999,999') AS To_Suki_Points,					
 	TO_CHAR(SUM(CAST(metadata:"points" AS INTEGER)), 'FM999,999,999')  AS  From_Mabuhay_Miles
-FROM "BPAY_SFCRWDS_transactions" t        
-    INNER JOIN "BPAY_SFCRWDS_accounts" a ON a.id = t.account_id
+FROM SFC_RWDS_TRANSACTIONS t        
+    INNER JOIN SFC_RWDS_ACCOUNTS  a ON a.id = t.account_id
 WHERE        
     t.type || '-' || t.code = 'CONVERT_CREDIT-APPROVAL'
+    AND partner_id = 'a19c59e4-f55e-428e-9efd-e9bd98d231af'
     AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', "timestamp") AS DATE) != CAST(CONVERT_TIMEZONE('America/Los_Angeles', CURRENT_TIMESTAMP) AS DATE)
 --     AND CAST(CONVERT_TIMEZONE('America/Los_Angeles', "timestamp") AS DATE) = DATE_TRUNC('WEEK', CURRENT_TIMESTAMP) 
 -- GROUP BY        
