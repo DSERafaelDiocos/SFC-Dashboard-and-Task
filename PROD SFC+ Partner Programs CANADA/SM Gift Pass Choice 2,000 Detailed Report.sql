@@ -20,6 +20,7 @@ WHERE
     p.status = 'APPROVED'
     AND c.name = 'SM Gift Pass Choice Canada'
     AND p.CURRENCY = 'CAD'
+    AND CONVERT_TIMEZONE('UTC','America/Los_Angeles',p.INITIATED_AT::TIMESTAMP_NTZ) = :daterange
     -- P2000 only
     AND PARSE_JSON(p.particulars, 's')['items'][0]['item_name']::STRING LIKE '%2,000.00%'
 ORDER BY 

@@ -12,6 +12,6 @@ WHERE
 	p.status = 'APPROVED'						
 	AND c.name = 'ABS-CBN Foundation International Canada'	
     AND p.CURRENCY = 'CAD'
+    AND CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ) = :daterange
 ORDER BY 
  CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ) 
- 

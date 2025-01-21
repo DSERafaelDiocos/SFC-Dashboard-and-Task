@@ -13,5 +13,7 @@ WHERE
 	p.status = 'APPROVED'						
 	AND c.name = 'Jollibee US'	
     AND p.CURRENCY = 'USD'
+    AND PARSE_JSON(p.particulars, 's')['items'][0]['item_name']::STRING LIKE '%Jollibee SFC+ Package D%'
+    AND CAST(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ) AS DATE) = :daterange
 ORDER BY 
     CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ)

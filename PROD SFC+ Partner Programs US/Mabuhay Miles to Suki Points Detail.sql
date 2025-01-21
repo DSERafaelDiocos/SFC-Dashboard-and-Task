@@ -51,7 +51,7 @@ WHERE
     and t.code = 'APPROVAL'
     AND A.CURRENCY = 'USD'
     AND partner_id = 'a19c59e4-f55e-428e-9efd-e9bd98d231af'    -- PAL
-
+    AND CAST(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ) AS DATE) = :daterange
 ORDER BY
     timestamp_pacific;
     

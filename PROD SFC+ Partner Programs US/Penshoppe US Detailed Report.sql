@@ -19,5 +19,6 @@ WHERE
     p.status = 'APPROVED'
     AND c.name = 'Penshoppe US'
     AND p.CURRENCY = 'USD'
+    AND CAST(CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ) AS DATE) = :daterange
 ORDER BY 
     CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', p.INITIATED_AT::TIMESTAMP_NTZ)
