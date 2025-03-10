@@ -1,0 +1,234 @@
+-- SHOW PARAMETERS
+-- ALTER SESSION SET TIMEZONE ='Asia/Manila'
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_account_programs"
+(
+    id VARCHAR NOT NULL,
+    account_id VARCHAR NOT NULL,
+    program_id VARCHAR NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    details VARIANT,
+    balance BIGINT,
+    balance_at TIMESTAMP_TZ,
+    created_at TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+    linked_at TIMESTAMP_TZ,
+    deleted_at TIMESTAMP_TZ,
+    program_account_number VARCHAR NOT NULL
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_accounts"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    card_number VARCHAR NOT NULL,
+    secret VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    middle_name VARCHAR,
+    date_of_birth VARCHAR NOT NULL,
+    email VARCHAR NOT NULL,
+    mobile_number VARCHAR NOT NULL,
+    mobile_number_country_code VARCHAR NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    type VARCHAR NOT NULL DEFAULT 'INDIVIDUAL',
+    currency VARCHAR NOT NULL DEFAULT 'USD',
+    balance BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_api_keys"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    partner_id VARCHAR NOT NULL,
+    key VARCHAR NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    deleted_at TIMESTAMP_TZ
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_batch_status"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    batch_id VARCHAR NOT NULL,
+    code VARCHAR NOT NULL,
+    status VARCHAR NOT NULL DEFAULT 'CREATED',
+    source_ip_address VARCHAR,
+    user_id VARCHAR NOT NULL DEFAULT 'system',
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_batch_summary"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    batch_id VARCHAR NOT NULL,
+    ttl_cnt INTEGER NOT NULL DEFAULT 0,
+    ttl_pts BIGINT NOT NULL DEFAULT 0,
+    ern_cnt INTEGER NOT NULL DEFAULT 0,
+    ern_pts BIGINT NOT NULL DEFAULT 0,
+    ern_cntx INTEGER NOT NULL DEFAULT 0,
+    ern_ptsx BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_batch_transactions"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    batch_id VARCHAR NOT NULL,
+    transaction_id VARCHAR NOT NULL,
+    transaction_timestamp TIMESTAMP_TZ NOT NULL,
+    short_id VARCHAR NOT NULL,
+    partner_id VARCHAR NOT NULL,
+    partner_name VARCHAR NOT NULL,
+    account_id VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    mobile_number VARCHAR NOT NULL,
+    mobile_number_country_code VARCHAR NOT NULL,
+    card_number_mask VARCHAR NOT NULL,
+    source VARCHAR NOT NULL,
+    type VARCHAR NOT NULL,
+    code VARCHAR NOT NULL,
+    status VARCHAR NOT NULL,
+    points BIGINT NOT NULL,
+    balance BIGINT NOT NULL,
+    reference_id VARCHAR NOT NULL,
+    original_reference_id VARCHAR,
+    details VARCHAR,
+    properties VARIANT,
+    metadata VARIANT,
+    source_ip_address VARCHAR,
+    "timestamp" TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_batches"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    partner_id VARCHAR NOT NULL,
+    filename VARCHAR NOT NULL,
+    source_ip_address VARCHAR,
+    user_id VARCHAR NOT NULL DEFAULT 'system',
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_partner_accounts"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    partner_id VARCHAR NOT NULL,
+    account_id VARCHAR NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_partner_bins"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    partner_id VARCHAR NOT NULL,
+    bin INTEGER NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_partner_card_numbers" (
+    id STRING NOT NULL DEFAULT UUID_STRING(),
+    partner_bin_id STRING NOT NULL,
+    sequence INTEGER NOT NULL AUTOINCREMENT START 18 INCREMENT 3,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_partner_programs"
+(
+    id VARCHAR NOT NULL,
+    partner_id VARCHAR NOT NULL,
+    program_id VARCHAR NOT NULL,
+    deleted_at TIMESTAMP_TZ,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_partners"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    doing_business_as VARCHAR NOT NULL,
+    phone_number VARCHAR NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    representative VARCHAR,
+    email VARCHAR,
+    balance BIGINT,
+    phone_number_country_code VARCHAR
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_programs"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    partner_id VARCHAR NOT NULL,
+    program_code VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    description VARCHAR,
+    parameters VARIANT,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    deleted_at TIMESTAMP_TZ
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_report_details"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    report_id VARCHAR NOT NULL,
+    file_type VARCHAR NOT NULL,
+    content_type VARCHAR NOT NULL,
+    parameters VARCHAR,
+    query VARCHAR NOT NULL,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_reports"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    type VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    description VARCHAR,
+    display_name VARCHAR,
+    index INTEGER DEFAULT -1,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_schema_migrations"
+(
+    version BIGINT NOT NULL,
+    dirty BOOLEAN NOT NULL
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_transaction_types"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    name VARCHAR NOT NULL,
+    description VARCHAR,
+    position NUMBER(38,0) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_transactions"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    short_id VARCHAR NOT NULL,
+    partner_id VARCHAR NOT NULL,
+    account_id VARCHAR NOT NULL,
+    card_number_mask VARCHAR NOT NULL,
+    source VARCHAR NOT NULL,
+    type VARCHAR NOT NULL,
+    code VARCHAR NOT NULL,
+    points BIGINT NOT NULL,
+    balance BIGINT NOT NULL,
+    reference_id VARCHAR NOT NULL,
+    original_reference_id VARCHAR,
+    properties VARIANT,
+    metadata VARIANT,
+    source_ip_address VARCHAR,
+    "timestamp" TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    details VARCHAR
+);
+
+CREATE OR REPLACE TABLE "BPAY_SFCRWDS_transfers"
+(
+    id VARCHAR NOT NULL DEFAULT UUID_STRING(),
+    source_transaction_id VARCHAR NOT NULL,
+    target_transaction_id VARCHAR NOT NULL,
+    currency VARCHAR NOT NULL DEFAULT 'USD',
+    points BIGINT NOT NULL DEFAULT 0,
+    amount BIGINT NOT NULL DEFAULT 0,
+    "timestamp" TIMESTAMP_TZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
+);
