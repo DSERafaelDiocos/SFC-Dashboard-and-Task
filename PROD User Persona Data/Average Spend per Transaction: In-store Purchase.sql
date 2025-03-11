@@ -1,0 +1,27 @@
+WITH MAIN AS (
+    SELECT 
+         BASK.SOURCE,
+         BASK.ACCOUNT_ID,
+         BASK.ID,
+         SUM(BASK.PRICE) AS SPEND
+         
+    FROM SFC_PLUS_TRANSACTIONS_BASKETSIZE BASK
+    
+    WHERE BASK.SOURCE = 'INSTORE'
+    AND BASK.TYPE IN ('EARN', 'REDEEM')
+    
+    GROUP BY    
+        BASK.SOURCE,
+        BASK.ACCOUNT_ID,
+        BASK.ID
+)
+
+SELECT 
+    SOURCE,
+    AVG(SPEND) AS AVG_SPEND
+
+FROM MAIN
+
+GROUP BY 
+    SOURCE
+;

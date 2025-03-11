@@ -1,0 +1,80 @@
+WITH STORES AS (
+    SELECT *
+    FROM SFC_PLUS_STORES
+    WHERE REWARDS_STORE_CODE IS NOT NULL
+)
+
+SELECT 
+    CASE 
+        WHEN PARSE_JSON(RWTRX.METADATA, 's')['branch_code']::STRING IS NULL THEN 'NO BRANCH CODE'
+        ELSE PARSE_JSON(RWTRX.METADATA, 's')['branch_code']::STRING
+    END AS BRANCH_CODE,
+    CASE 
+        WHEN BRANCH_CODE IN ('MAU', 'MIL', 'NLV', 'TUK') THEN 'US'
+        ELSE STORES.COUNTRY 
+    END AS COUNTRY, 
+    CASE 
+        WHEN BRANCH_CODE = 'MAU' THEN 'Hawaii'
+        WHEN BRANCH_CODE = 'MIL' THEN 'California'
+        WHEN BRANCH_CODE = 'NLV' THEN 'Nevada'
+        WHEN BRANCH_CODE = 'TUK' THEN 'Washington St.'
+        ELSE STORES.STATE
+    END AS STATE,
+    CASE 
+        WHEN BRANCH_CODE = 'MAU' THEN 'Kahului'
+        WHEN BRANCH_CODE = 'MIL' THEN 'Milpitas'
+        WHEN BRANCH_CODE = 'NLV' THEN 'North Las Vegas'
+        WHEN BRANCH_CODE = 'TUK' THEN 'Seattle'
+        ELSE STORES.CITY
+    END AS CITY,
+    CASE 
+        WHEN BRANCH_CODE = 'MAU' THEN 'Seafood City Kahului'
+        WHEN BRANCH_CODE = 'MIL' THEN 'Seafood City Milpitas'
+        WHEN BRANCH_CODE = 'NLV' THEN 'Seafood City Shadow Mountain'
+        WHEN BRANCH_CODE = 'TUK' THEN 'Seafood City Seattle'
+        ELSE STORES.STORE_NAME
+    END AS STORE_NAME,
+    RWTRX.TYPE, 
+    RWTRX.SOURCE,
+    CASE 
+        WHEN RWTRX.SOURCE = 'REMITTANCE' THEN (
+            CASE 
+                WHEN PARSE_JSON(RWTRX.METADATA):transaction:channel::STRING LIKE '%BAYANIPAY-SSO%' THEN 'BayaniPay Remittance'
+                WHEN PARSE_JSON(RWTRX.METADATA):transaction:channel::STRING IS NULL THEN 'SFC Remittance'
+            END 
+        )
+        ELSE 'Not Applicable'
+    END AS REMITTANCE_TYPE,
+    SUM(RWTRX.POINTS) AS POINTS
+
+FROM SFC_RWDS_TRANSACTIONS RWTRX
+
+LEFT JOIN SFC_RWDS_PARTNERS RWDPT
+ON RWTRX.PARTNER_ID = RWDPT.ID
+
+LEFT JOIN STORES
+ON BRANCH_CODE = STORES.REWARDS_STORE_CODE
+
+WHERE RWTRX.TYPE IN ('EARN', 'REDEEM')
+AND RWTRX.SOURCE IN ('INSTORE', 'ONLINE', 'REMITTANCE')
+
+GROUP BY 
+    BRANCH_CODE,
+    COUNTRY,
+    STATE,
+    CITY,
+    STORE_NAME,
+    RWTRX.TYPE,
+    RWTRX.SOURCE,
+    REMITTANCE_TYPE
+
+ORDER BY 
+    BRANCH_CODE, 
+    COUNTRY,
+    STATE,
+    CITY,
+    STORE_NAME,
+    RWTRX.TYPE, 
+    RWTRX.SOURCE,
+    REMITTANCE_TYPE
+;
